@@ -10,18 +10,18 @@ DEFALUT_CHUNK_SIZE = 8*1024
 
 def chunk_reader(fobj, chunk_size=DEFALUT_CHUNK_SIZE, maxChunks=1000000000 ):
 	"""Generator that reads a file in chunks of bytes"""
-	i = 0
-	while ( i < maxChunks ):
+	#while ( i < maxChunks ):
+	for i in xrange( maxChunks ):
 		chunk = fobj.read(chunk_size)
 		if not chunk:
 			return
-		i+=1
 		yield chunk
 
-def fileBitCompare( fname1, fname2, chunk_size=DEFALUT_CHUNK_SIZE ):
+def fileBitCompare( fname1, fname2, chunk_size=DEFALUT_CHUNK_SIZE, maxChunks=1000000000 ):
 	fp1 = open( fname1, 'rb')
 	fp2 = open( fname2, 'rb')
-	while True:
+	#while True:
+	for i in xrange( maxChunks ):
 		chunk1 = fp1.read(chunk_size)
 		chunk2 = fp2.read(chunk_size)
 		if chunk1 != chunk2:
@@ -91,13 +91,13 @@ def path2list( path, hashLeve=0, hashFunc=hashlib.sha1 ):
 	return items
 
 def findCopies( items1, items2, path1, path2, exact=False ):
-	same       = []
+	#same       = []
 	moved      = []
 	notFound   = []
 	size_dic   = dictByComponent( items2, 2 )
 	#print size_dic
 	for file_i in items1:
-		found = False
+		#found = False
 		size_i     = file_i  [2     ]		
 		if size_i in size_dic: # search by file size 
 			copies = []
@@ -113,17 +113,17 @@ def findCopies( items1, items2, path1, path2, exact=False ):
 					if( check_passed ):
 						# TODO : check if are really the same ( not just hash )
 						rel_name_j = os.path.join(file_j[0], file_j[1])
-						if rel_name_i == rel_name_j:	# check file name					
-							found = True
-						else:
+						if rel_name_i != rel_name_j:	# check file name					
 							copies.append( file_j )
+						#else:
+							found = True
 			if copies:
 				moved.append( [ file_i, copies ] )
-			if found :
-				same.append( file_i )
+			#if found :
+			#	same.append( file_i )
 		else:
 			notFound.append( file_i )
-	return moved, notFound, same	
+	return moved, notFound #, same	
 
 def copyItems( items, src_path, dst_path ):
 	for item in items:
@@ -137,7 +137,37 @@ def copyItems( items, src_path, dst_path ):
 		print dst
 		print 
 		shutil.copyfile(src, dst)
+
+def copyItemsSafe( items, src_path, dst_path, checkNChunk=0, DO_IT=True ):
+	conflicts = []
+	for item in items:
+		abs_path = os.path.join( dst_path, item[1] )
+		src = os.path.join( os.path.join( src_path, item[1] ), item[0] )
+		dst = os.path.join( abs_path, item[0] )
+		#print 
+		#print src
+		#print dst
+		if not os.path.isdir( abs_path ):
+			if( DO_IT ):
+				os.makedirs( abs_path )
+		elif os.path.isfile( dst ):
+			src_size  = os.path.getsize(src)
+			dst_size  = os.path.getsize(dst)
+			same_files = False
+			if ( src_size == dst_size ):
+				same_files = fileBitCompare( src, dst, maxChunks=checkNChunk )
+			if not same_files:
+				conflicts.append( item )
+				#print " conflict ! " 
+			#else:
+			#	print " same => ignore " 
+			continue
+		#print " copying " 
+		if( DO_IT ):
+			shutil.copyfile(src, dst)
+	return conflicts
 		
+'''
 def sync_list( path1, path2, hashLeve=0 ):
 	items1 = path2list( path1, hashLeve=hashLeve )
 	items2 = path2list( path2, hashLeve=hashLeve )
@@ -159,6 +189,7 @@ def sync_list( path1, path2, hashLeve=0 ):
 	#print 
 	#writeFileList( same )
 	copyItems( notFound, path1, path2 )
+'''
 
 
 
