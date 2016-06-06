@@ -157,5 +157,58 @@ def check_journals( bibitems, journals=journals, normalize=-1 ):
 			print "unknown journal '%s' in %i '%s'" %(journal,i,item[0])
 			continue
 
+# ============ Citations in Latex
+
+def findCitations( fname ):
+	dct = {}
+	fin = open( fname, 'r' )
+	i = 0
+	for line in fin:
+		if "\cite{" in line:
+			toks = line.split( "\cite{" )[1:]
+			for tok in toks:
+				cites = tok.split("}")[0]
+				for cit in cites.split(","):
+					cit = cit.strip()
+					if cit in dct:
+						dct[cit].append( i ) 
+					else:
+						dct[cit] = [i] 
+					#print i,cit
+				i+=1
+	fin.close()
+	return dct
+
+def replaceCitations( fin, fout, replace_dict ):
+	fin  = open( fin, 'r' )
+	fout = open( fout, 'w' )
+	nrep = 0
+	for line in fin:
+		if "\cite{" in line:
+			toks = line.split( "\cite{" )
+			line_list = [ toks[0] ]
+			for tok in toks[1:]:
+				line_list.append( "\cite{" )
+				cites = tok.split("}",1)
+				citlst = cites[0].split(",")
+				for j,cit in enumerate(citlst):
+					cit = cit.strip()
+					if cit in replace_dict:
+						print "replacing '%s' --> '%s' " %(cit,replace_dict[cit])
+						cit = replace_dict[cit]						
+						nrep += 1
+					line_list.append( cit )
+					if j < len(citlst)-1:
+						line_list.append( ',' )
+				line_list.append( "}"+cites[1] )
+			line = "".join( line_list )
+		fout.write(line)
+	fout.close()
+	fin.close()
+	return nrep
+
+
+
+
 
 
