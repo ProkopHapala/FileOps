@@ -61,6 +61,31 @@ def toDict( items ):
 		dct[ item[0] ] = item[1]
 	return dct,keys 
 
+def toDict2( items, warn_duplicates=True ):
+	keys = []
+	dct  = {}
+	for i,item in enumerate( items ):
+		label = item[0]
+		if label in dct:
+			if warn_duplicates:
+				print "duplicate label '%s' at %i " %(label,i)
+			continue
+		dct[label] = item
+		keys.append(label)
+	return dct,keys 
+
+def selectByLabel( labels, items, dct=None, warn_duplicates=True, warn_missing=True ):
+	if dct is None:
+		dct,junk = toDict2( items, warn_duplicates=warn_duplicates )
+	selected = []
+	for label in labels:
+		if label in dct:
+			selected.append( dct[label] )
+		else:
+			if warn_missing:
+				print "missing label '%s'" %label
+	return selected
+	
 def dictOfVals( bibitems, aspect='journal', warn_no_key=True ):
 	dct = {}
 	for i,item in enumerate( bibitems ):
@@ -122,6 +147,33 @@ def list2file( fname, lst ):
 
 # ============ checking and analysis 
 
+def find_duplicates_label( bibitems, verbose=True ):
+	dct        = {}
+	collisions = []
+	for i,item in enumerate( bibitems ):
+		if item[0] in dct:
+			dct[item[0]].append(i)
+			collisions.append( ( dct[item[0]][0], i ) )
+			if verbose:
+				print "duplicate label '%s' (%i,%i) " %( item[0], dct[item[0]][0], i )
+		else:
+			dct[item[0]]=[i]
+	return collisions
+
+def find_duplicates_label_files( bibitems, fname, dct, verbose=True ):
+	collisions = []
+	for i,item in enumerate( bibitems ):
+		label = item[0]
+		if label in dct:
+			coll = ( dct[label], fname )
+			collisions.append( coll )
+			if verbose:
+				print "label '%s' from '%s' previously declared in '%s'" %( label, coll[1], coll[0] )
+		else:
+			dct[label]=fname
+	return collisions
+
+
 def find_duplicates( bibitems, by_aspects=['title'], warn_no_key=True ):
 	dct        = {}
 	collisions = []
@@ -159,8 +211,8 @@ def check_journals( bibitems, journals=journals, normalize=-1 ):
 
 # ============ Citations in Latex
 
-def findCitations( fname ):
-	dct = {}
+def findCitations( fname, dct = {} ):
+	lst = []
 	fin = open( fname, 'r' )
 	i = 0
 	for line in fin:
@@ -174,10 +226,11 @@ def findCitations( fname ):
 						dct[cit].append( i ) 
 					else:
 						dct[cit] = [i] 
+						lst.append( cit )
 					#print i,cit
 				i+=1
 	fin.close()
-	return dct
+	return lst,dct
 
 def replaceCitations( fin, fout, replace_dict ):
 	fin  = open( fin, 'r' )
