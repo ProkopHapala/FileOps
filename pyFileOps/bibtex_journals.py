@@ -10,6 +10,7 @@ bakclist = [
 #       Full name										Abbreviation							alias						mangled forms							
 journals = [
 (	'ACS Nano'											,	'ACS Nano'							,'ACSNano'		,[]	),
+(   'Advances In Physics'                               ,   'Adv. Phys.'                        ,'AdvPhys'      ,[] ),
 (	'Advanced Materials'								,	'Adv. Mater.'						,'AdvMat'		,[]	),
 (	'Advanced Materials Interfaces'						,	'Adv. Mater. Interfaces'			,'AdvMatInt'	,[]	),
 (	'Annals of the New York Academy of Sciences'		,	'Ann. N.Y. Acad. Sci.'				,'ANYASt'		,[]	),
@@ -26,6 +27,7 @@ journals = [
 (	'International Journal of Molecular Sciences'		,	'Int. J. Mol. Sci.'					,'IntJMolSci'	,[]	),
 (	'International Journal of Quantum Chemistry'		,	'Int. J. Quantum Chem.'				,'IntJQChem'	,[]	),
 (	'Journal of Applied Physics'						,	'J. Appl. Phys.'					,'JApplPhys'	,[]	),
+(   'Journal of Catalysis'                              ,   'J. Catal.'                         ,'JCat'         ,[] ),
 (	'Journal of Chemical Physics'						,	'J. Chem. Phys.'					,'JCP'			,[	'The Journal of chemical physics'				]	),
 (	'Journal of Computational Chemistry'				,	'J. Comput. Chem.'					,'JCompChem'	,[]	),
 (	'Journal of Experimental and Theoretical Physics'	,	'Zh. Eksp. Teor. Fiz.'				,'JETP'			,[]	),
@@ -58,6 +60,7 @@ journals = [
 (	'Nature Communications'								,	'Nat. Commun.'						,'NatCom'		,[]	),
 (	'Nature Materials'									,	'Nat. Mater.'						,'NatMater'		,[]	),
 (	'New Journal of Physics'							,	'New J. Phys.'						,'NewJPhys'		,[]	),
+(   'Optics Express'                                    ,   'Opt. Express'                      ,'OptExp'       ,[] ),
 (	'Organic Electronics'								,	'Org. Electron.'					,'OrgEl'		,[]	),
 (	'Physica Status Solidi A'							,	'Phys. Status Solidi A'				,'PSSa'			,[ 'physica status solidi (a)'  ]	),
 (	'Physica Status Solidi B'							,	'Phys. Status Solidi B'				,'PSSb'			,[ 'Physica Status Solidi (B)'  ]	),

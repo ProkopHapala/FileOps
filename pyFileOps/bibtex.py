@@ -6,6 +6,8 @@ from bibtex_journals import journals
 
 # ============ CONSTANST
 
+bib_classes = [ "@article{", "@book{", "@inbook{" ]
+
 aspects_main = [
 'author',
 'title',
@@ -98,8 +100,6 @@ def dictOfVals( bibitems, aspect='journal', warn_no_key=True ):
 		elif warn_no_key: print "no key %s in %i %s" %(aspect,i,item[0]) 
 	return dct
 
-
-
 # ============ I/O Functions
 
 def loadBibtex( fname, warn_unknown=True, strip__=True ):
@@ -115,7 +115,10 @@ def loadBibtex( fname, warn_unknown=True, strip__=True ):
 				key = ls[0].strip().lower()
 				if strip__: key = key.strip('_')
 				if key in bibtex_aspects_dict:
-					item[1][key] = ls[1].strip()
+					val = ls[1].strip()
+					if val[-1] != ',':
+						val=val+','
+					item[1][key] = val
 				elif warn_unknown:
 					print "unknown key '%s' in '%s'" %(key,item[0])
 			elif "}" in line:
@@ -124,7 +127,7 @@ def loadBibtex( fname, warn_unknown=True, strip__=True ):
 				continue
 		elif "@article" in line:
 			label = line.split("{",1)[1].strip().strip(',')
-			item = (label,{})
+			item = (label,{},fname)
 	fin.close()
 	return articles
 
@@ -182,10 +185,11 @@ def find_duplicates( bibitems, by_aspects=['title'], warn_no_key=True ):
 		for aspect in by_aspects:
 			if aspect in item[1]:
 				hstr = hstr + item[1][aspect].strip().strip('{},')
-			elif warn_no_key: print "no key %s in %i %s" %(aspect,i,item[0]) 
-		if hstr in dct:
+			elif warn_no_key: print "no key %s in %i %s" %(aspect,i,item[0])
+		if ( len(hstr)>0 ) and (hstr in dct):
 			j = dct[hstr]
-			print " %i %s colide with %i %s" %(j,bibitems[j][0],i,bibitems[i][0]) 
+			print " %i %s in %s colide with %i %s in %s " %(j,bibitems[j][0],bibitems[j][2],i,bibitems[i][0],bibitems[i][2]) 
+			print "'%s'" %hstr
 			collisions.append( (j,i) )
 		else:
 			dct[hstr] = i
