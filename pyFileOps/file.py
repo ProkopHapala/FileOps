@@ -65,6 +65,24 @@ def writeFileList( items, fout=sys.stdout ):
 	for file_i in items:
 		fout.write( os.path.join(file_i[1], file_i[0])  + "\n" )
 
+def saveDict( fname, dct ):
+	fout = open( fname, 'w' )
+	for key in dct:
+		fout.write( key + " | " + str( dct[key] ) +"\n" )
+
+def loadDict( fname, dct={}, replace=False ):
+	fin = open( fname, 'r' )
+	for line in fin:
+		wds = line.split('|')
+		#print wds
+		key = wds[0].strip()
+		if key in dct:
+			if replace:
+				dct[key] = int(wds[1])
+		else:
+			dct[key] = int(wds[1])
+	return dct
+
 # ==== Main algorithm	
 
 def path2list( path, maxChunks=0, hashFunc=hashlib.sha1, echoPerNFiles = 1000 ):
