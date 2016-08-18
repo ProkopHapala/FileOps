@@ -67,7 +67,7 @@ def writeFileList( items, fout=sys.stdout ):
 
 # ==== Main algorithm	
 
-def path2list( path, maxChunks=0, hashFunc=hashlib.sha1, echoPerNFiles = -1 ):
+def path2list( path, maxChunks=0, hashFunc=hashlib.sha1, echoPerNFiles = 1000 ):
 	nbytes = 0
 	items = []
 	for dirpath, dirnames, filenames in os.walk(path):
@@ -139,23 +139,27 @@ def findDuplicates( items, path, maxChunks=0 ):
 					items = neq[1:]
 	return duplicates
 
-def findCopies( items1, items2, path1, path2, maxChunks=0 ):
+def findCopies( items1, items2, path1, path2, maxChunks=0, echoPerNFiles = 1000 ):
 	#same      = []
 	moved      = []
 	notFound   = []
 	size_dic   = dictByComponent( items2, 2 )
 	#print size_dic
-	for file_i in items1:
+	for i, file_i in enumerate(items1):
+		rel_name_i  = os.path.join(file_i[1], file_i[0])	
+		full_path_i = os.path.join( path1, rel_name_i	)
+		size_i      = file_i  [2     ]	
+		if( (i%echoPerNFiles)==0 ):
+			print "findCopies processed %i-th file %s" % (i, full_path_i)
 		#found = False
-		size_i     = file_i  [2     ]		
+	
 		if size_i in size_dic: # search by file size 
 			copies = []
 			candidates  = size_dic[size_i]
-			rel_name_i  = os.path.join(file_i[1], file_i[0])	
-			full_path_i = os.path.join( path1, rel_name_i	)
 			for file_j in candidates:
 				if( file_j[3] == file_i[3] ):  # check hash
-					full_path_j  = os.path.join( path2, os.path.join( file_j[1], file_j[0] )	)
+					rel_name_j   = os.path.join( file_j[1], file_j[0] )
+					full_path_j  = os.path.join( path2, rel_name_j	)
 					#print 
 					#print "comparing files"
 					#print full_path_i
@@ -163,8 +167,10 @@ def findCopies( items1, items2, path1, path2, maxChunks=0 ):
 					check_passed = fileBitCompare( full_path_i, full_path_j, maxChunks=maxChunks )
 					if( check_passed ):
 						# TODO : check if are really the same ( not just hash )
-						rel_name_j = os.path.join(file_j[0], file_j[1])
-						if rel_name_i != rel_name_j:	# check file name					
+						if rel_name_i != rel_name_j:	# check file name	
+							#print "----"
+							#print "rel_name_i",rel_name_i
+							#print "rel_name_j",rel_name_j				
 							copies.append( file_j )
 						#else:
 							found = True
