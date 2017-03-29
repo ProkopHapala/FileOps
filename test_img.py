@@ -1,3 +1,4 @@
+#! /usr/bin/python
 import sys
 import pyFileOps.image as im
         

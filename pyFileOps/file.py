@@ -4,6 +4,8 @@ import os
 import hashlib
 import shutil
 
+import mmap
+
 # ==== General utils
 
 DEFALUT_CHUNK_SIZE = 8*1024
@@ -74,7 +76,7 @@ def loadDict( fname, dct={}, replace=False ):
 	fin = open( fname, 'r' )
 	for line in fin:
 		wds = line.split('|')
-		#print wds
+		#print( wds )
 		key = wds[0].strip()
 		if key in dct:
 			if replace:
@@ -85,7 +87,7 @@ def loadDict( fname, dct={}, replace=False ):
 
 # ==== Main algorithm	
 
-def path2list( path, maxChunks=0, hashFunc=hashlib.sha1, echoPerNFiles = 1000 ):
+def path2list( path, maxChunks=0, echoPerNFiles = 1000 ):
 	nbytes = 0
 	items = []
 	for dirpath, dirnames, filenames in os.walk(path):
@@ -102,9 +104,62 @@ def path2list( path, maxChunks=0, hashFunc=hashlib.sha1, echoPerNFiles = 1000 ):
 				nbytes+=size
 				nfiles  = len(items)
 				if( nfiles%echoPerNFiles == 0 ):
-					print "files %i bytes %i   %s" %( nfiles, nbytes, full_path )
+					print( "files %i bytes %i   %s" %( nfiles, nbytes, full_path ) )
 	return items
 
+def matchAny( name, include ):
+    for s in include:
+        if s in name:
+            return True
+    return False    
+    
+def path2list_filter( path, maxChunks=0, include=[''], exclude=[], echoPerNFiles = 1000 ):
+    nbytes = 0
+    items = []
+    for dirpath, dirnames, filenames in os.walk(path, topdown=True):
+        #print dirpath, dirnames, filenames
+        for filename in filenames:
+            full_path = os.path.join(dirpath, filename)
+            rel_path  = os.path.relpath( dirpath, path)
+            size      = os.path.getsize(full_path)
+            hashval   = None
+            #print "filename ", filename
+            if not ( matchAny( filename, include ) and not matchAny( filename, exclude ) ):
+                #print "not accepted : ", filename
+                continue
+            if ( maxChunks > 0 ):
+                hashval = hashFile( full_path, maxChunks=maxChunks, seed=str(size) )
+            item = [ filename, rel_path, size, hashval ]
+            items.append( item )
+            if( echoPerNFiles > 0 ):
+                nbytes+=size
+                nfiles  = len(items)
+                if( nfiles%echoPerNFiles == 0 ):
+                    print( "files %i bytes %i   %s" %( nfiles, nbytes, full_path ) )
+    return items
+
+
+def searchInFile( full_path, pattern ):
+    '''
+    http://stackoverflow.com/questions/4940032/search-for-string-in-txt-file-python
+    http://stackoverflow.com/questions/4697882/how-can-i-find-all-matches-to-a-regular-expression-in-python
+    '''
+    f = open(full_path)
+    s = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+    found = False
+    if s.find( pattern ) != -1:
+        return True
+    return found
+
+def searchInFiles( items, path, pattern ):
+    selected = []
+    for i,item in enumerate(items):
+        dirpath   = os.path.join(path, item[1])
+        full_path = os.path.join(dirpath, item[0])
+        found = searchInFile( full_path, pattern )
+        if found:
+            selected.append(i)
+    return selected
 
 '''
 def findDuplicates( path, maxChunks=1, hash=hashlib.sha1 ):
@@ -118,7 +173,7 @@ def findDuplicates( path, maxChunks=1, hash=hashlib.sha1 ):
 				file_id = ( hashval, os.path.getsize(full_path))
 				duplicate = hashes.get(file_id, None)
 				if duplicate:
-					print "Duplicate found: %s and %s" % (full_path, duplicate)
+					print( "Duplicate found: %s and %s" % (full_path, duplicate) )
 				else:
 					hashes[file_id] = full_path
 '''
@@ -168,7 +223,7 @@ def findCopies( items1, items2, path1, path2, maxChunks=0, echoPerNFiles = 1000 
 		full_path_i = os.path.join( path1, rel_name_i	)
 		size_i      = file_i  [2     ]	
 		if( (i%echoPerNFiles)==0 ):
-			print "findCopies processed %i-th file %s" % (i, full_path_i)
+			print( "findCopies processed %i-th file %s" % (i, full_path_i) )
 		#found = False
 	
 		if size_i in size_dic: # search by file size 
@@ -178,17 +233,17 @@ def findCopies( items1, items2, path1, path2, maxChunks=0, echoPerNFiles = 1000 
 				if( file_j[3] == file_i[3] ):  # check hash
 					rel_name_j   = os.path.join( file_j[1], file_j[0] )
 					full_path_j  = os.path.join( path2, rel_name_j	)
-					#print 
-					#print "comparing files"
-					#print full_path_i
-					#print full_path_j
+					#print() 
+					#print( "comparing files" )
+					#print( full_path_i )
+					#print( full_path_j )
 					check_passed = fileBitCompare( full_path_i, full_path_j, maxChunks=maxChunks )
 					if( check_passed ):
 						# TODO : check if are really the same ( not just hash )
 						if rel_name_i != rel_name_j:	# check file name	
-							#print "----"
-							#print "rel_name_i",rel_name_i
-							#print "rel_name_j",rel_name_j				
+							#print( "----" )
+							#print( "rel_name_i",rel_name_i )
+							#print( "rel_name_j",rel_name_j )				
 							copies.append( file_j )
 						#else:
 							found = True
@@ -207,10 +262,10 @@ def copyItems( items, src_path, dst_path ):
 			os.makedirs( abs_path )
 		src = os.path.join( os.path.join( src_path, item[1] ), item[0] )
 		dst = os.path.join( abs_path, item[0] )
-		print "copy: "
-		print src
-		print dst
-		print 
+		print( "copy: " )
+		print( src )
+		print( dst )
+		print() 
 		shutil.copyfile(src, dst)
 
 def copyItemsSafe( items, src_path, dst_path, checkNChunk=0, DO_IT=True ):
@@ -219,9 +274,9 @@ def copyItemsSafe( items, src_path, dst_path, checkNChunk=0, DO_IT=True ):
 		abs_path = os.path.join( dst_path, item[1] )
 		src = os.path.join( os.path.join( src_path, item[1] ), item[0] )
 		dst = os.path.join( abs_path, item[0] )
-		#print 
-		#print src
-		#print dst
+		#print() 
+		#print( src )
+		#print( dst )
 		if not os.path.isdir( abs_path ):
 			if( DO_IT ):
 				os.makedirs( abs_path )
@@ -233,11 +288,11 @@ def copyItemsSafe( items, src_path, dst_path, checkNChunk=0, DO_IT=True ):
 				same_files = fileBitCompare( src, dst, maxChunks=checkNChunk )
 			if not same_files:
 				conflicts.append( item )
-				#print " conflict ! " 
+				#print( " conflict ! " ) 
 			#else:
-			#	print " same => ignore " 
+			#	print( " same => ignore " ) 
 			continue
-		#print " copying " 
+		#print( " copying " ) 
 		if( DO_IT ):
 			shutil.copyfile(src, dst)
 	return conflicts
