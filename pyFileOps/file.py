@@ -4,7 +4,24 @@ import os
 import hashlib
 import shutil
 
+import re
 import mmap
+
+try: 
+    from scandir import walk as dir_walk
+    print " using : scandir.walk"
+except ImportError:
+    from os import walk as dir_walk
+    print " using : scandir.walk"
+    
+try:
+    from fnmatch import fnmatch
+    print " using : fnmatch"
+except ImportError:
+    def fnmatch_(fname,maks):
+        return (mask in fname)
+    fnmatch = fnmatch_
+    print " fnmatch not found; using (mask in fname)"
 
 # ==== General utils
 
@@ -87,10 +104,10 @@ def loadDict( fname, dct={}, replace=False ):
 
 # ==== Main algorithm	
 
-def path2list( path, maxChunks=0, echoPerNFiles = 1000 ):
+def path2list( path, maxChunks=0, echoPerNFiles = 1000, dir_walk=dir_walk ):
 	nbytes = 0
 	items = []
-	for dirpath, dirnames, filenames in os.walk(path):
+	for dirpath, dirnames, filenames in dir_walk(path):
 		for filename in filenames:
 			full_path = os.path.join(dirpath, filename)
 			rel_path  = os.path.relpath( dirpath, path)
@@ -109,14 +126,14 @@ def path2list( path, maxChunks=0, echoPerNFiles = 1000 ):
 
 def matchAny( name, include ):
     for s in include:
-        if s in name:
+        if fnmatch(name, s):
             return True
     return False    
-    
+   
 def path2list_filter( path, maxChunks=0, include=[''], exclude=[], echoPerNFiles = 1000 ):
     nbytes = 0
     items = []
-    for dirpath, dirnames, filenames in os.walk(path, topdown=True):
+    for dirpath, dirnames, filenames in dir_walk(path, topdown=True):
         #print dirpath, dirnames, filenames
         for filename in filenames:
             full_path = os.path.join(dirpath, filename)
@@ -138,35 +155,32 @@ def path2list_filter( path, maxChunks=0, include=[''], exclude=[], echoPerNFiles
                     print( "files %i bytes %i   %s" %( nfiles, nbytes, full_path ) )
     return items
 
-
-def searchInFile( full_path, pattern ):
-    '''
-    http://stackoverflow.com/questions/4940032/search-for-string-in-txt-file-python
-    http://stackoverflow.com/questions/4697882/how-can-i-find-all-matches-to-a-regular-expression-in-python
-    '''
-    f = open(full_path)
-    s = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-    found = False
-    if s.find( pattern ) != -1:
-        return True
-    return found
-
 def searchInFiles( items, path, pattern ):
     selected = []
+    founds   = []
+    pattern  = re.compile(pattern)
     for i,item in enumerate(items):
-        dirpath   = os.path.join(path, item[1])
+        dirpath   = os.path.join(path,    item[1])
         full_path = os.path.join(dirpath, item[0])
-        found = searchInFile( full_path, pattern )
-        if found:
+        #re.findall(pattern, string, flags=0)
+        #found = searchInFile( full_path, pattern )
+        f = open(full_path)
+        s = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        found = [m.start(0) for m in re.finditer(pattern,s)]
+        f.close()
+        if len(found)>0:
             selected.append(i)
-    return selected
+            founds.append(found)
+    print "selected ", selected
+    print "founds ", founds
+    return selected, founds
 
 '''
 def findDuplicates( path, maxChunks=1, hash=hashlib.sha1 ):
 	hashes     = {}
 	duplicates = []
 	for path in paths:
-		for dirpath, dirnames, filenames in os.walk(path):
+		for dirpath, dirnames, filenames in dir_walk(path):
 			for filename in filenames:
 				full_path = os.path.join(dirpath, filename)
 				hashval = hashFile( full_path, maxChunks=maxChunks )
