@@ -21,19 +21,27 @@ class MyPopupMenu(wx.Menu):
     def __init__(self, app):
         wx.Menu.__init__(self)
         self.app = app
-        item1 = wx.MenuItem(self, wx.NewId(), "open external")
-        self.AppendItem(item1)
-        self.Bind(wx.EVT_MENU, self.onItem1, item1)
-
-    def onItem1(self, event):
-        print "external open i : ", self.app.i_select
-        item = self.app.found_items[self.app.i_select];    # print "external open   : ", item
-        abspath   = os.path.join(self.app.search_path, item[1])
-        full_path = os.path.join(abspath, item[0]);        # print full_path
+        item1 = wx.MenuItem(self, wx.NewId(), "Open File");   self.AppendItem(item1); self.Bind(wx.EVT_MENU, self.onOpenFile,   item1)
+        item2 = wx.MenuItem(self, wx.NewId(), "Open Folder"); self.AppendItem(item2); self.Bind(wx.EVT_MENU, self.onOpenFolder, item2)
+      
+    def osOpen(self, full_path ):
         if sys.platform == 'linux2':
             os.system('xdg-open %s' %full_path) 
         else:
-            os.system('start %s' %full_path)
+            os.system('start %s' %full_path)   
+
+    def onOpenFile(self, event):
+        print "Open File : ", self.app.i_select
+        item = self.app.found_items[self.app.i_select][0];    # print "external open   : ", item
+        abspath   = os.path.join(self.app.txtDir.GetValue(), item[1])
+        full_path = os.path.join(abspath, item[0]);           # print full_path
+        self.osOpen( full_path )
+        
+    def onOpenFolder(self, event):
+        print "Open Folder : ", self.app.i_select
+        item = self.app.found_items[self.app.i_select][0];    # print "external open   : ", item
+        abspath   = os.path.join(self.app.txtDir.GetValue(), item[1])        
+        self.osOpen( abspath )
 
 class MyFrame(wx.Frame):
     #root_path   = ""
@@ -57,8 +65,12 @@ class MyFrame(wx.Frame):
         box.Add(self.txtStr, 1, wx.EXPAND | wx.ALL, 3)
         panel.SetSizer(box)
         
-        self.dir  = wx.GenericDirCtrl(splitter3, -1, dir=self.txtDir.GetValue(), size=(100,100), style=wx.DIRCTRL_DIR_ONLY)
-        self.lc1  = wx.ListCtrl(splitter2, -1, size=(100,100), style=wx.LC_LIST)
+        self.dir  = wx.GenericDirCtrl(splitter3, -1, dir=self.txtDir.GetValue(), size=(500,100), style=wx.DIRCTRL_DIR_ONLY)
+        #self.lc1  = wx.ListCtrl(splitter2, -1, size=(100,100), style=wx.LC_LIST)
+        self.lc1 = wx.ListCtrl(splitter2, -1, size=(200,100), style=wx.LC_REPORT)
+        self.lc1.InsertColumn(0, 'file'); self.lc1.SetColumnWidth(0, 200)
+        self.lc1.InsertColumn(1, 'path'); self.lc1.SetColumnWidth(1, 300)
+        
         self.text = wx.TextCtrl(splitter2, 1000, '', size=(100, 100), style=wx.TE_MULTILINE | wx.TE_RICH | wx.TE_PROCESS_ENTER)
         #self.text.SetFocus()
         
@@ -86,11 +98,14 @@ class MyFrame(wx.Frame):
         event.Skip()
         
     def onRightDown(self,event):
-        self.PopupMenu(MyPopupMenu(self), event.GetPosition())
+        #pos = event.GetPosition()   # for some reason returns position relative to lc1
+        pos = self.ScreenToClient( wx.GetMousePosition() ) # a bit hack
+        self.PopupMenu(MyPopupMenu(self), pos )
         #self.popup
 
     def onFileSelect(self, event ):
-        i = len(self.found_items) - event.GetIndex() -1 # why like that? - probably list filled last-on-top; numbered from 1
+        #i = len(self.found_items) - event.GetIndex() -1 # why like that? - probably list filled last-on-top; numbered from 1
+        i = event.GetIndex()
         self.i_select = i
         item = self.found_items[i]
         #print i," ",item
@@ -113,12 +128,18 @@ class MyFrame(wx.Frame):
         self.search_str = self.txtStr.GetValue()            #print  self.includes
         items    = fops.path2list_filter( path, include=self.includes, echoPerNFiles=100 ) 
         found_is, founds = fops.searchInFiles   ( items, path, self.search_str )
-        self.lc1.ClearAll()
+        #self.lc1.ClearAll()
+        self.lc1.DeleteAllItems()
         #print "found %i items" %len(found_is)
         found_items = []
         for ii,i in enumerate(found_is):
             print items[i][0]
-            self.lc1.InsertStringItem(0, items[i][0] )
+            #self.lc1.InsertStringItem(0, items[i][0] )
+            num_items = self.lc1.GetItemCount()
+            self.lc1.InsertStringItem(num_items,    items[i][0] )
+            self.lc1.SetStringItem   (num_items, 1, items[i][1] )
+            #self.lc1.InsertStringItem(num_items, "Hey" )
+            #self.lc1.SetStringItem   (num_items, 1, "How" )
             found_items.append( (items[i],founds[ii]) ) 
         self.found_items = found_items
         
