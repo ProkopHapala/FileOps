@@ -215,6 +215,41 @@ def check_journals( bibitems, journals=journals, normalize=-1 ):
 
 # ============ Citations in Latex
 
+def loadBibItems( fname ):
+    dct = {}
+    fin = open( fname, 'r' )
+    nempty = 0
+    line = fin.readline()
+    while(nempty<=100):
+        if r"\bibitem" in line:
+            label   = line.split( "{" )[1].split("}")[0]
+            #print label
+            j=0
+            content = ""
+            while(j<5):
+                line = fin.readline(); j+=1
+                if "\end{" in line:
+                    nempty = 1000
+                    break
+                if r"\bibitem" in line:
+                    break
+                content += line
+            dct[label] = content
+        else: 
+            line = fin.readline()
+            nempty+=1	
+    fin.close()
+    return dct
+    
+    
+def exportBibItems( fout, labels, dct ):
+    for label in labels:
+        if label in dct:
+            fout.write( ( r"\bibitem{%s}" %label)+"\n" )
+            fout.write( dct[label] )
+        else:
+            print "missing citation ", label
+
 def findCitations( fname, dct = {} ):
 	lst = []
 	fin = open( fname, 'r' )
